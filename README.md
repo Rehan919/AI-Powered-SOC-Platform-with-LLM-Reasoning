@@ -133,8 +133,8 @@ Wazuh / SIEM Alert
 #### Step 1: Clone the Repository
 
 ```bash
-git clone https://github.com/rehan-ali-mahomed/sentinelforge.git
-cd sentinelforge
+git clone https://github.com/Rehan919/AI-Powered-SOC-Platform-with-LLM-Reasoning.git
+cd AI-Powered-SOC-Platform-with-LLM-Reasoning
 ```
 
 #### Step 2: Download the LLM Model
@@ -191,8 +191,8 @@ The backend auto-falls back to **SQLite** when no `DATABASE_URL` is set, and Chr
 #### Step 1: Clone the Repository
 
 ```bash
-git clone https://github.com/rehan-ali-mahomed/sentinelforge.git
-cd sentinelforge
+git clone https://github.com/Rehan919/AI-Powered-SOC-Platform-with-LLM-Reasoning.git
+cd AI-Powered-SOC-Platform-with-LLM-Reasoning
 ```
 
 #### Step 2: Start the Backend
