@@ -477,7 +477,11 @@ Supported active-response commands:
 
 These PowerShell scripts configure a **Windows** Wazuh agent for enhanced detection and automated response.
 
-### Detection Setup (Sysmon + FIM)
+### Detection Setup (Tiers 2 & 3)
+
+The platform provides layered defense-in-depth detection tiers:
+- **Tier 2 (Sysmon)** — Catches execution and behavior, including fileless malware, by logging process creation, network connections, and registry modifications.
+- **Tier 3 (VirusTotal)** — Performs hash lookups on file drops via real-time FIM (detect-on-download, no execution required).
 
 Run in an **elevated PowerShell**:
 
@@ -487,9 +491,9 @@ Run in an **elevated PowerShell**:
 
 This will:
 1. Back up the current Wazuh agent config (`ossec.conf.bak_*`)
-2. Download and install Sysmon with SwiftOnSecurity rules
+2. Download and install Sysmon with SwiftOnSecurity rules (**Tier 2**)
 3. Add Sysmon event channel forwarding to Wazuh
-4. Enable real-time File Integrity Monitoring on Downloads folder
+4. Enable real-time File Integrity Monitoring on the `Downloads` folder for VirusTotal hash lookups (**Tier 3**)
 5. Validate the XML config (auto-restores backup on failure)
 6. Restart the Wazuh agent
 
