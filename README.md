@@ -23,9 +23,9 @@ An agentic SOC platform that uses **multi-agent LLM reasoning** with an OPAR loo
 - [Architecture](#-architecture)
 - [Tech Stack](#-tech-stack)
 - [Getting Started](#-getting-started)
-  - [Prerequisites](#prerequisites)
-  - [Option A — Docker (Recommended)](#option-a--docker-recommended-full-stack-in-one-command)
-  - [Option B — Local Development](#option-b--local-development-no-docker)
+  - [Quick Start (2 Commands)](#-quick-start-2-commands)
+  - [Manual Setup](#-manual-setup-step-by-step)
+  - [Local Development (No Docker)](#-option-b--local-development-no-docker)
 - [Usage](#-usage)
   - [Dashboard](#1-dashboard)
   - [API](#2-api)
@@ -121,25 +121,69 @@ Wazuh / SIEM Alert
 | Requirement | Version | Notes |
 |-------------|---------|-------|
 | **Git** | any | To clone the repo |
-| **Docker & Docker Compose** | Docker 20+ | *For Option A (recommended)* |
-| **Python** | 3.11+ | *For Option B (local dev)* |
-| **Node.js** | 20+ | *For Option B (local dev)* |
+| **Docker & Docker Compose** | Docker 20+ | Required |
 | **RAM** | ~4 GB free | For the LLM model |
+
+> **No Docker?** See [Option B — Local Development](#option-b--local-development-no-docker) below.
 
 ---
 
-### Option A — Docker (Recommended): Full Stack in One Command
+### ⚡ Quick Start (2 Commands)
 
-#### Step 1: Clone the Repository
+The setup script **does everything automatically**: checks Docker, creates `.env`, downloads the Phi-3 LLM model (~2.3 GB), and starts all 6 services.
 
 ```bash
 git clone https://github.com/Rehan919/AI-Powered-SOC-Platform-with-LLM-Reasoning.git
 cd AI-Powered-SOC-Platform-with-LLM-Reasoning
 ```
 
-#### Step 2: Download the LLM Model
+**Windows (PowerShell):**
+```powershell
+.\setup.ps1
+```
 
-The Phi-3 model (~2.3 GB) is required for AI-powered analysis.
+**Linux / macOS:**
+```bash
+chmod +x setup.sh
+./setup.sh
+```
+
+That's it. Wait for the build to finish, then open **[http://localhost:3000](http://localhost:3000)**.
+
+> **💡 What the script does under the hood:**
+> 1. ✅ Verifies Docker is running
+> 2. ✅ Creates `.env` from `.env.example` (if not exists)
+> 3. ✅ Downloads Phi-3 Mini LLM (~2.3 GB) to `models/` (if not already downloaded)
+> 4. ✅ Runs `docker compose up --build` — starts PostgreSQL, ChromaDB, LLM, Backend, Frontend, and Webhook Receiver
+
+#### Services After Setup
+
+| Service | URL | Description |
+|---------|-----|-------------|
+| **SOC Dashboard** | [http://localhost:3000](http://localhost:3000) | Main React dashboard |
+| **API** | [http://localhost:8001](http://localhost:8001) | FastAPI backend |
+| **API Docs (Swagger)** | [http://localhost:8001/docs](http://localhost:8001/docs) | Interactive API reference |
+| **Wazuh Webhook** | [http://localhost:9090](http://localhost:9090) | Alert ingestion endpoint |
+| **LLM Server** | [http://localhost:8080](http://localhost:8080) | Phi-3 via llama.cpp |
+
+---
+
+### 🔧 Manual Setup (Step-by-Step)
+
+<details>
+<summary>Click to expand manual setup instructions</summary>
+
+If you prefer to run each step yourself:
+
+#### Step 1: Clone & Configure
+
+```bash
+git clone https://github.com/Rehan919/AI-Powered-SOC-Platform-with-LLM-Reasoning.git
+cd AI-Powered-SOC-Platform-with-LLM-Reasoning
+cp .env.example .env
+```
+
+#### Step 2: Download the LLM Model
 
 **Linux / macOS:**
 ```bash
@@ -155,17 +199,9 @@ Invoke-WebRequest -Uri "https://huggingface.co/microsoft/Phi-3-mini-4k-instruct-
   -OutFile "models/phi-3-mini-4k-instruct.Q4_K_M.gguf"
 ```
 
-> **💡 Tip:** You can skip this step — the platform will still work without the LLM, falling back to deterministic (rule-based) analysis.
+> **💡 Tip:** You can skip this step — the platform still works without the LLM, falling back to deterministic (rule-based) analysis.
 
-#### Step 3: Create the `.env` File
-
-```bash
-cp .env.example .env
-```
-
-The defaults work out of the box. See [Configuration](#%EF%B8%8F-configuration) for customization.
-
-#### Step 4: Start Everything
+#### Step 3: Start Everything
 
 ```bash
 docker compose up --build
@@ -173,20 +209,20 @@ docker compose up --build
 
 This brings up **6 services**: PostgreSQL, ChromaDB, Phi-3 LLM, Backend API, Frontend, and Wazuh Webhook Receiver.
 
-#### Step 5: Open the Dashboard
+#### Step 4: Open the Dashboard
 
-| Service | URL |
-|---------|-----|
-| **SOC Dashboard** | [http://localhost:3000](http://localhost:3000) |
-| **API** | [http://localhost:8001](http://localhost:8001) |
-| **API Docs (Swagger)** | [http://localhost:8001/docs](http://localhost:8001/docs) |
-| **Wazuh Webhook** | [http://localhost:9090](http://localhost:9090) |
+Open [http://localhost:3000](http://localhost:3000).
+
+</details>
 
 ---
 
-### Option B — Local Development (No Docker)
+### 💻 Option B — Local Development (No Docker)
 
-The backend auto-falls back to **SQLite** when no `DATABASE_URL` is set, and ChromaDB + LLM degrade gracefully with deterministic logic if unreachable — so you can run the full stack with just **Python + Node.js**.
+<details>
+<summary>Click to expand local development setup</summary>
+
+The backend auto-falls back to **SQLite** when no `DATABASE_URL` is set, and ChromaDB + LLM degrade gracefully with deterministic logic if unreachable — so you can run the full stack with just **Python 3.11+** and **Node.js 20+**.
 
 #### Step 1: Clone the Repository
 
@@ -219,7 +255,9 @@ The Vite dev server starts at [http://localhost:3000](http://localhost:3000) and
 
 #### Step 4: (Optional) Download the LLM Model
 
-Same as [Step 2 above](#step-2-download-the-llm-model). Place the `.gguf` file in the `models/` directory and run llama.cpp separately, or skip it to use deterministic fallbacks.
+Download the Phi-3 model (see manual setup above), place it in the `models/` directory, and run llama.cpp separately — or skip it to use deterministic fallbacks.
+
+</details>
 
 ---
 
@@ -347,6 +385,8 @@ sentinelforge/
 │
 ├── docker-compose.yml            # Full-stack Docker orchestration
 ├── .env.example                  # Environment template
+├── setup.ps1                     # ⚡ One-click setup (Windows)
+├── setup.sh                      # ⚡ One-click setup (Linux/macOS)
 ├── simulator.py                  # Wazuh alert simulator
 ├── extract_forensics.py          # Sysmon forensic extraction script
 ├── parse_alerts.py               # Alert log parser
