@@ -33,7 +33,7 @@ An agentic SOC platform that uses **multi-agent LLM reasoning** with an OPAR loo
 12. [Wazuh Integration](#-wazuh-integration)
 13. [Wazuh Detection & Mitigation Setup](#-wazuh-detection--mitigation-setup)
 14. [Project Structure](#-project-structure)
-15. [Configuration](#%EF%B8%8F-configuration)
+15. [Configuration](#️-configuration)
 16. [Testing](#-testing)
 17. [Troubleshooting](#-troubleshooting)
 18. [Contributing](#-contributing)
@@ -46,7 +46,7 @@ An agentic SOC platform that uses **multi-agent LLM reasoning** with an OPAR loo
 | Category | Details |
 |----------|---------|
 | **Multi-Agent AI Pipeline** | 4-agent OPAR loop — Planner, Investigator, Reporter, Responder — with deterministic fallbacks |
-| **Local LLM** | Phi-3 Mini via llama.cpp — fully offline, no API keys, Phi-3 chat template with `<\|user\|>` / `<\|assistant\|>` tokens |
+| **Local LLM** | Phi-3 Mini via llama.cpp — fully offline, no API keys, Phi-3 chat template with `<&#124;user&#124;>` / `<&#124;assistant&#124;>` tokens |
 | **RAG Memory** | ChromaDB vector store seeded with MITRE ATT&CK knowledge, detection rules, and response playbooks |
 | **Threat Intelligence** | CTI lookup via AbuseIPDB (real) + built-in ThreatFox/MalwareBazaar database (fallback) |
 | **MITRE ATT&CK Mapping** | 16 technique definitions (T1003–T1566) with tactic, description, and detection guidance |
@@ -519,7 +519,7 @@ Restart the manager to apply the integration: `docker restart wazuh.manager`
 #### 3. Verification (EICAR Test)
 
 To verify the pipeline is fully operational:
-1. Download the harmless **EICAR test file** into your `Downloads` directory.
+1. Download the harmless **[EICAR test file](https://www.eicar.org/download-anti-malware-testfile/)** into your `Downloads` directory.
 2. The agent will immediately hash it (FIM).
 3. The manager queries VirusTotal and fires a high-severity alert.
 4. The alert hits SentinelForge via Webhook and appears in the dashboard without ever executing the file.
