@@ -1,4 +1,4 @@
-<![CDATA[<div align="center">
+<div align="center">
 
 # 🛡️ SentinelForge
 
@@ -22,15 +22,10 @@ An agentic SOC platform that uses **multi-agent LLM reasoning** with an OPAR loo
 - [Features](#-features)
 - [Architecture](#-architecture)
 - [Tech Stack](#-tech-stack)
-- [Getting Started](#-getting-started)
-  - [Quick Start (2 Commands)](#-quick-start-2-commands)
-  - [Manual Setup](#-manual-setup-step-by-step)
-  - [Local Development (No Docker)](#-option-b--local-development-no-docker)
+- [Quick Start](#-quick-start)
+- [Manual Setup](#-manual-setup)
+- [Local Development (No Docker)](#-local-development-no-docker)
 - [Usage](#-usage)
-  - [Dashboard](#1-dashboard)
-  - [API](#2-api)
-  - [Alert Simulator](#3-alert-simulator)
-  - [Wazuh Integration](#4-wazuh-integration)
 - [Project Structure](#-project-structure)
 - [Configuration](#%EF%B8%8F-configuration)
 - [Testing](#-testing)
@@ -114,68 +109,54 @@ Wazuh / SIEM Alert
 
 ---
 
-## 🚀 Getting Started
+## ⚡ Quick Start
 
-### Prerequisites
+> **Prerequisites:** Git, Docker & Docker Compose, ~4 GB free RAM.
 
-| Requirement | Version | Notes |
-|-------------|---------|-------|
-| **Git** | any | To clone the repo |
-| **Docker & Docker Compose** | Docker 20+ | Required |
-| **RAM** | ~4 GB free | For the LLM model |
-
-> **No Docker?** See [Option B — Local Development](#option-b--local-development-no-docker) below.
-
----
-
-### ⚡ Quick Start (2 Commands)
-
-The setup script **does everything automatically**: checks Docker, creates `.env`, downloads the Phi-3 LLM model (~2.3 GB), and starts all 6 services.
-
-```bash
-git clone https://github.com/Rehan919/AI-Powered-SOC-Platform-with-LLM-Reasoning.git
-cd AI-Powered-SOC-Platform-with-LLM-Reasoning
-```
+Clone and run the automated setup script — it handles **everything** (Docker check, `.env` creation, LLM model download, and starting all services):
 
 **Windows (PowerShell):**
+
 ```powershell
+git clone https://github.com/Rehan919/AI-Powered-SOC-Platform-with-LLM-Reasoning.git
+cd AI-Powered-SOC-Platform-with-LLM-Reasoning
 .\setup.ps1
 ```
 
 **Linux / macOS:**
+
 ```bash
-chmod +x setup.sh
-./setup.sh
+git clone https://github.com/Rehan919/AI-Powered-SOC-Platform-with-LLM-Reasoning.git
+cd AI-Powered-SOC-Platform-with-LLM-Reasoning
+chmod +x setup.sh && ./setup.sh
 ```
 
-That's it. Wait for the build to finish, then open **[http://localhost:3000](http://localhost:3000)**.
+Wait for the build to finish, then open **http://localhost:3000**.
 
-> **💡 What the script does under the hood:**
-> 1. ✅ Verifies Docker is running
-> 2. ✅ Creates `.env` from `.env.example` (if not exists)
-> 3. ✅ Downloads Phi-3 Mini LLM (~2.3 GB) to `models/` (if not already downloaded)
-> 4. ✅ Runs `docker compose up --build` — starts PostgreSQL, ChromaDB, LLM, Backend, Frontend, and Webhook Receiver
+**What the script does:**
 
-#### Services After Setup
+1. ✅ Verifies Docker is running
+2. ✅ Creates `.env` from `.env.example`
+3. ✅ Downloads Phi-3 Mini LLM (~2.3 GB) into `models/`
+4. ✅ Runs `docker compose up --build` (starts all 6 services)
 
-| Service | URL | Description |
-|---------|-----|-------------|
-| **SOC Dashboard** | [http://localhost:3000](http://localhost:3000) | Main React dashboard |
-| **API** | [http://localhost:8001](http://localhost:8001) | FastAPI backend |
-| **API Docs (Swagger)** | [http://localhost:8001/docs](http://localhost:8001/docs) | Interactive API reference |
-| **Wazuh Webhook** | [http://localhost:9090](http://localhost:9090) | Alert ingestion endpoint |
-| **LLM Server** | [http://localhost:8080](http://localhost:8080) | Phi-3 via llama.cpp |
+**Services after setup:**
+
+| Service | URL |
+|---------|-----|
+| SOC Dashboard | http://localhost:3000 |
+| API | http://localhost:8001 |
+| API Docs (Swagger) | http://localhost:8001/docs |
+| Wazuh Webhook | http://localhost:9090 |
+| LLM Server | http://localhost:8080 |
 
 ---
 
-### 🔧 Manual Setup (Step-by-Step)
+## 🔧 Manual Setup
 
-<details>
-<summary>Click to expand manual setup instructions</summary>
+If you prefer to run each step yourself instead of using the setup script.
 
-If you prefer to run each step yourself:
-
-#### Step 1: Clone & Configure
+### Step 1 — Clone & Configure
 
 ```bash
 git clone https://github.com/Rehan919/AI-Powered-SOC-Platform-with-LLM-Reasoning.git
@@ -183,9 +164,12 @@ cd AI-Powered-SOC-Platform-with-LLM-Reasoning
 cp .env.example .env
 ```
 
-#### Step 2: Download the LLM Model
+### Step 2 — Download the LLM Model
+
+The Phi-3 model (~2.3 GB) powers the AI analysis. You can skip this step — the platform falls back to deterministic (rule-based) analysis without it.
 
 **Linux / macOS:**
+
 ```bash
 mkdir -p models
 curl -L -o models/phi-3-mini-4k-instruct.Q4_K_M.gguf \
@@ -193,45 +177,32 @@ curl -L -o models/phi-3-mini-4k-instruct.Q4_K_M.gguf \
 ```
 
 **Windows (PowerShell):**
+
 ```powershell
 New-Item -ItemType Directory -Force -Path models
 Invoke-WebRequest -Uri "https://huggingface.co/microsoft/Phi-3-mini-4k-instruct-gguf/resolve/main/Phi-3-mini-4k-instruct-q4.gguf" `
   -OutFile "models/phi-3-mini-4k-instruct.Q4_K_M.gguf"
 ```
 
-> **💡 Tip:** You can skip this step — the platform still works without the LLM, falling back to deterministic (rule-based) analysis.
-
-#### Step 3: Start Everything
+### Step 3 — Start All Services
 
 ```bash
 docker compose up --build
 ```
 
-This brings up **6 services**: PostgreSQL, ChromaDB, Phi-3 LLM, Backend API, Frontend, and Wazuh Webhook Receiver.
+This brings up **6 containers**: PostgreSQL, ChromaDB, Phi-3 LLM, Backend API, Frontend, and Wazuh Webhook Receiver.
 
-#### Step 4: Open the Dashboard
+### Step 4 — Open the Dashboard
 
-Open [http://localhost:3000](http://localhost:3000).
-
-</details>
+Go to **http://localhost:3000**.
 
 ---
 
-### 💻 Option B — Local Development (No Docker)
+## 💻 Local Development (No Docker)
 
-<details>
-<summary>Click to expand local development setup</summary>
+The backend falls back to **SQLite** when no `DATABASE_URL` is set. ChromaDB and the LLM degrade gracefully with deterministic logic if unreachable. You only need **Python 3.11+** and **Node.js 20+**.
 
-The backend auto-falls back to **SQLite** when no `DATABASE_URL` is set, and ChromaDB + LLM degrade gracefully with deterministic logic if unreachable — so you can run the full stack with just **Python 3.11+** and **Node.js 20+**.
-
-#### Step 1: Clone the Repository
-
-```bash
-git clone https://github.com/Rehan919/AI-Powered-SOC-Platform-with-LLM-Reasoning.git
-cd AI-Powered-SOC-Platform-with-LLM-Reasoning
-```
-
-#### Step 2: Start the Backend
+### Backend
 
 ```bash
 cd backend
@@ -239,9 +210,9 @@ pip install -r requirements.txt
 uvicorn src.main:app --port 8001 --reload
 ```
 
-> The backend will use SQLite (`backend/sentinelforge.db`) automatically — no PostgreSQL needed.
+> Uses SQLite (`backend/sentinelforge.db`) automatically — no PostgreSQL needed.
 
-#### Step 3: Start the Frontend
+### Frontend
 
 Open a **new terminal**:
 
@@ -251,30 +222,24 @@ npm install
 npm run dev
 ```
 
-The Vite dev server starts at [http://localhost:3000](http://localhost:3000) and proxies `/api` requests to the backend.
+The Vite dev server starts at http://localhost:3000 and proxies `/api` requests to the backend.
 
-#### Step 4: (Optional) Download the LLM Model
+### LLM (Optional)
 
-Download the Phi-3 model (see manual setup above), place it in the `models/` directory, and run llama.cpp separately — or skip it to use deterministic fallbacks.
-
-</details>
+Download the Phi-3 model (see Step 2 in Manual Setup), place it in `models/`, and run llama.cpp separately — or skip it to use deterministic fallbacks.
 
 ---
 
 ## 📖 Usage
 
-### 1. Dashboard
+### Submit an Alert via Dashboard
 
-Open [http://localhost:3000](http://localhost:3000) to access the SOC dashboard.
+1. Open http://localhost:3000
+2. Paste or edit the sample JSON alert
+3. Click **"Analyze Alert"**
+4. Watch the AI agent investigate and generate an incident report
 
-- **Submit Alerts** — Paste or edit JSON alerts and click "Analyze Alert"
-- **View Incidents** — See AI-generated investigation reports with MITRE mappings
-- **Process Forensics** — Visual process tree analysis from Sysmon data
-- **Approve/Dismiss Actions** — Review AI-suggested containment responses
-
-### 2. API
-
-Submit an alert for AI analysis:
+### Submit via API
 
 ```bash
 curl -X POST http://localhost:8001/alert/analyze \
@@ -289,19 +254,16 @@ curl -X POST http://localhost:8001/alert/analyze \
   }'
 ```
 
-Approve or dismiss a response action:
+### Approve / Dismiss Response Actions
 
 ```bash
-# Approve (triggers execution)
-curl -X POST http://localhost:8001/response/approve/1
-
-# Dismiss
-curl -X POST http://localhost:8001/response/dismiss/1
+curl -X POST http://localhost:8001/response/approve/1   # Approve (triggers execution)
+curl -X POST http://localhost:8001/response/dismiss/1   # Dismiss
 ```
 
-Full API documentation is at [http://localhost:8001/docs](http://localhost:8001/docs).
+Full API documentation: http://localhost:8001/docs
 
-### 3. Alert Simulator
+### Alert Simulator
 
 Send simulated Wazuh alerts to test the platform end-to-end:
 
@@ -309,11 +271,11 @@ Send simulated Wazuh alerts to test the platform end-to-end:
 python simulator.py
 ```
 
-This sends a random alert every 30 seconds to the webhook receiver (PowerShell commands, SSH brute force, ransomware detection).
+Sends a random alert every 30 seconds (PowerShell commands, SSH brute force, ransomware detection).
 
-### 4. Wazuh Integration
+### Wazuh Integration
 
-To receive live alerts from a Wazuh deployment, add this to your Wazuh manager's `ossec.conf`:
+Add this to your Wazuh manager's `ossec.conf`:
 
 ```xml
 <integration>
@@ -332,69 +294,69 @@ Replace `<SENTINELFORGE_HOST>` with your server's IP or hostname.
 
 ```
 sentinelforge/
-├── backend/                      # FastAPI backend
+├── backend/                        # FastAPI backend
 │   ├── src/
-│   │   ├── agent/                # AI agent pipeline
+│   │   ├── agent/                  # AI agent pipeline
 │   │   │   ├── agents/
-│   │   │   │   ├── planner.py        # Plans investigation steps
-│   │   │   │   ├── investigator.py   # Executes investigation tools
-│   │   │   │   ├── reporter.py       # Generates incident reports
-│   │   │   │   └── responder.py      # Suggests containment actions
-│   │   │   ├── manager.py            # Agent orchestration
-│   │   │   ├── opar_loop.py          # OPAR loop implementation
-│   │   │   └── prompts.py            # LLM prompt templates
-│   │   ├── api/                  # REST API routes
-│   │   ├── llm/                  # LLM client (llama.cpp)
-│   │   ├── memory/               # Database + ChromaDB RAG
-│   │   ├── models/               # Pydantic schemas
-│   │   ├── tools/                # Investigation tools
-│   │   │   ├── cti_lookup.py         # Threat intelligence lookup
-│   │   │   ├── mitre_lookup.py       # MITRE ATT&CK mapping
-│   │   │   ├── log_search.py         # Wazuh log search
-│   │   │   ├── wazuh_host.py         # Wazuh host info
-│   │   │   └── wazuh_response.py     # Active response execution
-│   │   ├── webhook/              # Wazuh webhook receiver
-│   │   ├── config.py             # Environment configuration
-│   │   └── main.py               # FastAPI app entry point
-│   ├── tests/                    # Pytest test suite
+│   │   │   │   ├── planner.py          # Plans investigation steps
+│   │   │   │   ├── investigator.py     # Executes investigation tools
+│   │   │   │   ├── reporter.py         # Generates incident reports
+│   │   │   │   └── responder.py        # Suggests containment actions
+│   │   │   ├── manager.py             # Agent orchestration
+│   │   │   ├── opar_loop.py           # OPAR loop implementation
+│   │   │   └── prompts.py             # LLM prompt templates
+│   │   ├── api/                    # REST API routes
+│   │   ├── llm/                    # LLM client (llama.cpp)
+│   │   ├── memory/                 # Database + ChromaDB RAG
+│   │   ├── models/                 # Pydantic schemas
+│   │   ├── tools/                  # Investigation tools
+│   │   │   ├── cti_lookup.py           # Threat intelligence lookup
+│   │   │   ├── mitre_lookup.py         # MITRE ATT&CK mapping
+│   │   │   ├── log_search.py           # Wazuh log search
+│   │   │   ├── wazuh_host.py           # Wazuh host info
+│   │   │   └── wazuh_response.py       # Active response execution
+│   │   ├── webhook/                # Wazuh webhook receiver
+│   │   ├── config.py               # Environment configuration
+│   │   └── main.py                 # FastAPI app entry point
+│   ├── tests/                      # Pytest test suite
 │   ├── requirements.txt
 │   ├── Dockerfile
 │   └── start.sh
 │
-├── frontend/                     # React + TypeScript dashboard
+├── frontend/                       # React + TypeScript dashboard
 │   ├── src/
 │   │   ├── pages/
-│   │   │   ├── Dashboard.tsx         # Main SOC dashboard
-│   │   │   ├── AlertDetail.tsx       # Individual alert view
-│   │   │   ├── AiReview.tsx          # AI analysis review
-│   │   │   └── ProcessForensics.tsx  # Sysmon forensic analysis
-│   │   ├── components/           # Reusable UI components
-│   │   ├── api/                  # API client
-│   │   ├── styles/               # CSS
-│   │   ├── App.tsx               # Router setup
-│   │   └── main.tsx              # Entry point
+│   │   │   ├── Dashboard.tsx           # Main SOC dashboard
+│   │   │   ├── AlertDetail.tsx         # Individual alert view
+│   │   │   ├── AiReview.tsx            # AI analysis review
+│   │   │   └── ProcessForensics.tsx    # Sysmon forensic analysis
+│   │   ├── components/             # Reusable UI components
+│   │   ├── api/                    # API client
+│   │   ├── styles/                 # CSS
+│   │   ├── App.tsx                 # Router setup
+│   │   └── main.tsx                # Entry point
 │   ├── package.json
 │   ├── vite.config.ts
 │   ├── Dockerfile
 │   └── nginx.conf
 │
-├── models/                       # LLM model files (not committed)
+├── models/                         # LLM model files (not committed)
 │   └── phi-3-mini-4k-instruct.Q4_K_M.gguf
 │
-├── wazuh-deployment/             # Wazuh Docker deployment configs
+├── wazuh-deployment/               # Wazuh Docker deployment configs
 │
-├── docker-compose.yml            # Full-stack Docker orchestration
-├── .env.example                  # Environment template
-├── setup.ps1                     # ⚡ One-click setup (Windows)
-├── setup.sh                      # ⚡ One-click setup (Linux/macOS)
-├── simulator.py                  # Wazuh alert simulator
-├── extract_forensics.py          # Sysmon forensic extraction script
-├── parse_alerts.py               # Alert log parser
-├── setup-detection.ps1           # Sysmon + Wazuh detection setup (Windows)
-├── setup-mitigation.ps1          # Active response setup (Windows)
-├── mitigate-threat.cmd           # Wazuh active response script
-├── ossec.conf                    # Example Wazuh agent configuration
-└── test-alerts.json              # Sample alert data for testing
+├── docker-compose.yml              # Full-stack Docker orchestration
+├── .env.example                    # Environment template
+├── setup.ps1                       # One-click setup (Windows)
+├── setup.sh                        # One-click setup (Linux/macOS)
+├── simulator.py                    # Wazuh alert simulator
+├── extract_forensics.py            # Sysmon forensic extraction script
+├── parse_alerts.py                 # Alert log parser
+├── setup-detection.ps1             # Sysmon + Wazuh detection setup
+├── setup-mitigation.ps1            # Active response setup
+├── mitigate-threat.cmd             # Wazuh active response script
+├── ossec.conf                      # Example Wazuh agent config
+└── test-alerts.json                # Sample alert data for testing
 ```
 
 ---
@@ -415,20 +377,18 @@ cp .env.example .env
 | `CHROMA_PORT` | `8000` | `8000` | ChromaDB port |
 | `CORS_ORIGINS` | `http://localhost:3000,http://frontend:3000` | `http://localhost:3000` | Allowed CORS origins |
 | `WEBHOOK_URL` | `http://wazuh-webhook:9090/webhook/generic` | `http://localhost:9999/webhook` | Webhook forwarding URL |
-| `ABUSEIPDB_KEY` | *(empty)* | *(empty)* | AbuseIPDB API key (optional, for CTI) |
+| `ABUSEIPDB_KEY` | *(empty)* | *(empty)* | AbuseIPDB API key (optional) |
 | `API_KEY` | *(empty)* | *(empty)* | API authentication key (optional) |
-| `INDEXER_URL` | `https://localhost:9200` | `https://localhost:9200` | Wazuh indexer (OpenSearch) URL |
+| `INDEXER_URL` | `https://localhost:9200` | `https://localhost:9200` | Wazuh indexer URL |
 | `WAZUH_API_URL` | `https://localhost:55000` | `https://localhost:55000` | Wazuh manager API URL |
 
 ---
 
 ## 🧪 Testing
 
-Run the backend test suite:
-
 ```bash
 cd backend
-pip install -r requirements.txt   # if not already installed
+pip install -r requirements.txt
 pytest
 ```
 
@@ -486,13 +446,13 @@ cat alerts.json | python parse_alerts.py
 
 | Problem | Solution |
 |---------|----------|
-| **LLM container keeps restarting** | Ensure you have ~4 GB RAM free. Check the model file exists in `models/` and isn't corrupted (should be ~2.3 GB). |
-| **Backend can't connect to PostgreSQL** | Wait 10–15 seconds — PostgreSQL has a health check. Run `docker compose logs postgres` to verify. |
-| **Frontend shows "Network Error"** | Ensure the backend is running. For local dev, check that port 8001 is accessible and the Vite proxy is configured. |
-| **ChromaDB errors** | ChromaDB is optional — the backend degrades gracefully. For Docker, run `docker compose logs chromadb`. |
-| **`pip install` fails on `psycopg2-binary`** | On some systems, install `libpq-dev` first: `sudo apt install libpq-dev`. |
+| **LLM container keeps restarting** | Ensure ~4 GB RAM free. Check model file in `models/` (~2.3 GB). |
+| **Backend can't connect to PostgreSQL** | Wait 10–15 sec for health check. Run `docker compose logs postgres`. |
+| **Frontend shows "Network Error"** | Ensure backend is running on port 8001. |
+| **ChromaDB errors** | Optional — backend degrades gracefully. Run `docker compose logs chromadb`. |
+| **`pip install` fails on `psycopg2-binary`** | Install `libpq-dev`: `sudo apt install libpq-dev` |
 | **Permission denied on PowerShell scripts** | Run: `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass` |
-| **Port already in use** | Change the port mapping in `docker-compose.yml` or stop the conflicting service. |
+| **Port already in use** | Change port mapping in `docker-compose.yml` or stop conflicting service. |
 
 ---
 
@@ -517,4 +477,3 @@ This project is licensed under the [MIT License](LICENSE).
 **Built with ❤️ for the cybersecurity community**
 
 </div>
-]]>
