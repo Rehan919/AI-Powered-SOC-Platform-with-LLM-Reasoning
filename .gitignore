@@ -1,0 +1,53 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.egg
+.venv/
+venv/
+env/
+
+# Environment files (contain secrets)
+.env
+backend/.env
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/tsconfig.tsbuildinfo
+
+# LLM model files (large, ~2.3 GB)
+models/*.gguf
+
+# Docker volumes
+pgdata/
+chromadata/
+
+# Local SQLite dev database
+*.db
+
+# ChromaDB local data
+backend/chroma_data/
+
+# Pytest
+backend/.pytest_cache/
+.pytest_cache/
+
+# PID files
+*.pid
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Wazuh deployment (submodule with its own git)
+wazuh-deployment/
+
+# Quarantine folder (created by mitigation script)
+quarantine/
