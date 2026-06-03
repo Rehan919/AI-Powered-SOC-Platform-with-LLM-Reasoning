@@ -26,18 +26,11 @@ An agentic SOC platform that uses **multi-agent LLM reasoning** with an OPAR loo
 5. [Manual Setup](#-manual-setup)
 6. [Local Development (No Docker)](#-local-development-no-docker)
 7. [Usage](#-usage)
-8. [API Reference](#-api-reference)
-9. [Agent Pipeline Deep Dive](#-agent-pipeline-deep-dive)
-10. [Investigation Tools](#-investigation-tools)
-11. [RAG Memory System](#-rag-memory-system)
-12. [Wazuh Integration](#-wazuh-integration)
-13. [Wazuh Detection & Mitigation Setup](#-wazuh-detection--mitigation-setup)
-14. [Project Structure](#-project-structure)
-15. [Configuration](#️-configuration)
-16. [Testing](#-testing)
-17. [Troubleshooting](#-troubleshooting)
-18. [Contributing](#-contributing)
-19. [License](#-license)
+8. [Wazuh Integration](#-wazuh-integration)
+9. [Wazuh Detection & Mitigation Setup](#-wazuh-detection--mitigation-setup)
+10. [Configuration](#️-configuration)
+11. [Troubleshooting](#-troubleshooting)
+12. [License](#-license)
 
 ---
 
@@ -281,155 +274,6 @@ Sends a random Wazuh alert every 30 seconds:
 
 ---
 
-## 📡 API Reference
-
-Base URL: `http://localhost:8001`
-
-### Core Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/alert/analyze` | Submit an alert for full AI analysis pipeline |
-| `GET` | `/incidents` | List all incidents (paginated: `?skip=0&limit=20`) |
-| `GET` | `/incident/{id}` | Get full incident detail with agent steps, actions, similar incidents |
-| `PATCH` | `/incident/{id}` | Update incident status (`open`, `in_progress`, `resolved`, `false_positive`) |
-| `POST` | `/response/approve/{id}` | Approve and execute a response action (triggers Wazuh active-response) |
-| `POST` | `/response/dismiss/{id}` | Dismiss a suggested response action |
-| `GET` | `/threat-summary` | Get aggregated threat statistics |
-| `GET` | `/health` | Health check |
-
-### Forensics & Mitigation Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/forensics/{incident_id}` | Get full Sysmon forensic analysis (process tree, files, network, registry, DNS) |
-| `POST` | `/mitigate/{incident_id}` | Execute full threat mitigation via Wazuh active-response (kill + quarantine + clean) |
-
-### Webhook Endpoints (port 9090)
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/webhook/wazuh` | Receive Wazuh alerts (returns immediately, processes in background) |
-| `POST` | `/webhook/generic` | Receive alerts from any SIEM (synchronous processing) |
-
-### Example: Submit an Alert
-
-```bash
-curl -X POST http://localhost:8001/alert/analyze \
-  -H "Content-Type: application/json" \
-  -d '{
-    "agent": "WIN-PC",
-    "process": "powershell.exe",
-    "destination_ip": "185.199.1.20",
-    "rule": "Suspicious Powershell",
-    "mitre": "T1059",
-    "severity": 10
-  }'
-```
-
-### Example: Update Incident Status
-
-```bash
-curl -X PATCH http://localhost:8001/incident/1 \
-  -H "Content-Type: application/json" \
-  -d '{"status": "resolved"}'
-```
-
-### Alert Input Fields
-
-The normalizer accepts multiple field name formats:
-
-| Field | Also Accepts |
-|-------|-------------|
-| `hostname` | `agent`, `agent_name` |
-| `username` | `user`, `account_name` |
-| `process` | `process_name`, `image` |
-| `destination_ip` | `dest_ip`, `dst` |
-| `source_ip` | `src_ip`, `src` |
-| `rule` | `rule_description`, `title` |
-| `mitre` | `mitre_id`, `technique_id` |
-| `severity` | `level` (integer, default: 5) |
-
----
-
-## 🤖 Agent Pipeline Deep Dive
-
-The OPAR (Observe → Plan → Act → Reflect) loop runs on every alert:
-
-### 1. Observe
-
-Alert is normalized into a standard `AlertInput` schema. RAG context is loaded from ChromaDB (MITRE knowledge, detection rules, playbooks, past incidents).
-
-### 2. Plan (Planner Agent)
-
-The LLM decides which investigation tools to use (max 3 steps).
-
-**Deterministic fallback** (if LLM unavailable):
-- If `destination_ip` exists → `cti_lookup:{ip}`
-- If `hostname` exists → `wazuh_host:{host}`
-- If `mitre` exists → `mitre_lookup:{technique_id}`
-
-### 3. Act (Investigator Agent)
-
-Executes each planned step via the Tool Router.
-
-### 4. Reflect
-
-The LLM evaluates if evidence is sufficient. Answers `YES` or `NO`. If `NO`, loops back to Plan (max 3 iterations).
-
-**Deterministic fallback**: `YES` if any evidence exists, `NO` otherwise.
-
-### 5. Report (Reporter Agent)
-
-Generates a structured markdown incident report with sections:
-- **Summary** — 2-3 sentence overview
-- **What Happened** — Host, user, process, IP, attacker objective
-- **Impact** — Potential security impact
-- **Recommended Actions** — 3-5 concrete remediation steps
-
-**Deterministic fallback**: Rule-based triage — severity ≥ 9 → critical, ≥ 7 → high, else medium.
-
-### 6. Respond (Responder Agent)
-
-Suggests containment actions based on risk level:
-
-| Risk Level | Suggested Actions |
-|------------|-------------------|
-| Critical | `block_ip`, `isolate_host`, `kill_process`, `disable_account`, `create_ticket` |
-| High | `block_ip`, `isolate_host`, `create_ticket` |
-| Medium | `block_ip`, `create_ticket` |
-| Low | `create_ticket` |
-
----
-
-## 🔍 Investigation Tools
-
-The Tool Router provides 4 investigation tools to the agents:
-
-| Tool | Description | Real Source | Fallback |
-|------|-------------|-------------|----------|
-| **`cti_lookup`** | Threat intel lookup for IPs/hashes | AbuseIPDB API (needs `ABUSEIPDB_KEY`) | Built-in ThreatFox/MalwareBazaar database |
-| **`mitre_lookup`** | MITRE ATT&CK technique details | Built-in database (16 techniques) | Returns "Unknown" |
-| **`wazuh_host`** | Host investigation (process tree, users, connections) | Wazuh Manager API | Built-in mock host data |
-| **`log_search`** | Search recent security logs for a host | Wazuh Indexer (OpenSearch) | Built-in mock log data |
-
----
-
-## 🧠 RAG Memory System
-
-ChromaDB stores 4 vector collections, seeded at startup:
-
-| Collection | Contents | Usage |
-|------------|----------|-------|
-| `mitre_attack` | 10 MITRE ATT&CK technique descriptions | Context for investigation planning |
-| `detection_rules` | 5 detection rule descriptions | Pattern matching for alert triage |
-| `response_playbooks` | 5 incident response playbooks (malware, phishing, ransomware, credential theft, lateral movement) | Guides response suggestions |
-| `past_incidents` | Auto-populated with each analyzed incident | Similar incident retrieval |
-
-When ChromaDB HTTP server is unavailable, the system falls back to a **local PersistentClient** stored in `backend/chroma_data/`.
-
----
-
 ## 🔗 Wazuh Integration
 
 ### Webhook Receiver
@@ -551,98 +395,6 @@ cat alerts.json | python parse_alerts.py
 
 ---
 
-## 📁 Project Structure
-
-```
-sentinelforge/
-│
-├── backend/                          # FastAPI backend
-│   ├── src/
-│   │   ├── agent/                    # AI agent pipeline
-│   │   │   ├── agents/
-│   │   │   │   ├── planner.py            # Plans investigation steps (LLM + fallback)
-│   │   │   │   ├── investigator.py       # Executes tools from the plan
-│   │   │   │   ├── reporter.py           # Generates markdown incident reports
-│   │   │   │   └── responder.py          # Suggests containment actions
-│   │   │   ├── manager.py               # Full pipeline orchestration + dedup
-│   │   │   ├── opar_loop.py             # OPAR loop (observe/plan/act/reflect)
-│   │   │   └── prompts.py               # LLM prompt templates for all agents
-│   │   ├── api/
-│   │   │   ├── routes.py                # REST API endpoints
-│   │   │   ├── forensics.py             # Forensics + mitigation endpoints
-│   │   │   └── normalizer.py            # Alert field normalization
-│   │   ├── llm/
-│   │   │   └── phi3_client.py           # llama.cpp HTTP client (Phi-3 chat format)
-│   │   ├── memory/
-│   │   │   ├── database.py              # SQLAlchemy models (Alert, Incident, Action, AgentStep)
-│   │   │   └── vector_store.py          # ChromaDB RAG (MITRE, rules, playbooks, incidents)
-│   │   ├── models/
-│   │   │   └── schemas.py               # Pydantic schemas (AlertInput, IncidentReport, etc.)
-│   │   ├── tools/
-│   │   │   ├── cti_lookup.py            # Threat intel (AbuseIPDB + built-in DB)
-│   │   │   ├── mitre_lookup.py          # MITRE ATT&CK lookup (16 techniques)
-│   │   │   ├── log_search.py            # Wazuh indexer log search + mock fallback
-│   │   │   ├── wazuh_host.py            # Host investigation + mock fallback
-│   │   │   ├── wazuh_response.py        # Wazuh active-response API client
-│   │   │   ├── router.py                # Tool router (dispatches to tools)
-│   │   │   └── base.py                  # Base Tool class
-│   │   ├── webhook/
-│   │   │   ├── __init__.py              # Wazuh webhook FastAPI app
-│   │   │   └── receiver.py              # Entrypoint for webhook service
-│   │   ├── config.py                    # All environment variable config
-│   │   └── main.py                      # FastAPI app entry point
-│   ├── tests/
-│   │   ├── conftest.py                  # Test fixtures
-│   │   ├── test_fallbacks.py            # Deterministic fallback tests
-│   │   ├── test_improvements.py         # Agent pipeline tests
-│   │   └── test_security.py             # Input validation tests
-│   ├── requirements.txt
-│   ├── Dockerfile                       # Python 3.11-slim + curl
-│   └── start.sh                         # Container startup script
-│
-├── frontend/                            # React + TypeScript dashboard
-│   ├── src/
-│   │   ├── pages/
-│   │   │   ├── Dashboard.tsx                # Main SOC dashboard (stats, charts, table)
-│   │   │   ├── AlertDetail.tsx              # Individual incident view + agent steps
-│   │   │   ├── AiReview.tsx                 # AI analysis review page
-│   │   │   └── ProcessForensics.tsx         # Sysmon forensic analysis (17 KB)
-│   │   ├── components/
-│   │   │   ├── IncidentHeader.tsx           # Incident header component
-│   │   │   └── Markdown.tsx                 # Markdown renderer
-│   │   ├── api/
-│   │   │   └── client.ts                   # API client (fetch wrapper)
-│   │   ├── styles/
-│   │   │   └── global.css                  # Full design system
-│   │   ├── App.tsx                          # React Router setup
-│   │   └── main.tsx                         # Entry point
-│   ├── package.json
-│   ├── vite.config.ts                       # Vite config with /api proxy
-│   ├── Dockerfile                           # Multi-stage: node build → nginx
-│   └── nginx.conf                           # Reverse proxy config
-│
-├── models/                              # LLM model files (gitignored)
-│   └── phi-3-mini-4k-instruct.Q4_K_M.gguf
-│
-├── wazuh-deployment/                    # Wazuh Docker deployment configs (single/multi-node)
-│
-├── docker-compose.yml                   # Full-stack: 6 services
-├── .env.example                         # Environment template (copy to .env)
-├── setup.ps1                            # One-click setup (Windows)
-├── setup.sh                             # One-click setup (Linux/macOS)
-├── simulator.py                         # Wazuh alert simulator (3 alert types)
-├── extract_forensics.py                 # Sysmon forensic extraction (stdin JSON)
-├── parse_alerts.py                      # Alert log parser (stdin JSON)
-├── setup-detection.ps1                  # Sysmon + FIM setup (Windows, elevated)
-├── setup-mitigation.ps1                 # Active response setup (Windows, elevated)
-├── mitigate-threat.cmd                  # Wazuh active response: kill + quarantine + clean
-├── ossec.conf                           # Example Wazuh agent configuration
-├── test-alerts.json                     # Sample alert data for testing
-└── LICENSE                              # MIT License
-```
-
----
-
 ## ⚙️ Configuration
 
 All configuration is via environment variables. Copy `.env.example` to `.env`:
@@ -683,24 +435,6 @@ cp .env.example .env
 
 ---
 
-## 🧪 Testing
-
-```bash
-cd backend
-pip install -r requirements.txt
-pytest
-```
-
-Test suite covers:
-
-| Test File | What It Tests |
-|-----------|--------------|
-| `test_fallbacks.py` | Deterministic fallback logic when LLM is unavailable |
-| `test_improvements.py` | Agent pipeline behavior (planner, reporter, responder) |
-| `test_security.py` | Input validation, severity parsing, edge cases |
-
----
-
 ## 🔧 Troubleshooting
 
 | Problem | Solution |
@@ -715,16 +449,6 @@ Test suite covers:
 | **Permission denied on `.ps1` scripts** | Run: `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass` |
 | **Port already in use** | Change port mapping in `docker-compose.yml` or stop conflicting service. |
 | **LLM responses are slow** | Normal — Phi-3 runs on CPU. First request loads the model. Increase `--parallel` in docker-compose for throughput. |
-
----
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/my-feature`
-3. Commit your changes: `git commit -m "Add my feature"`
-4. Push to the branch: `git push origin feature/my-feature`
-5. Open a Pull Request
 
 ---
 
