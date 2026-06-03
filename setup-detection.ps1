@@ -39,6 +39,11 @@ $xml = Get-Content $conf -Raw
 if ($xml -notmatch 'Sysmon/Operational') {
   $block = @"
   <localfile>
+    <location>Microsoft-Windows-Windows Defender/Operational</location>
+    <log_format>eventchannel</log_format>
+  </localfile>
+
+  <localfile>
     <location>Microsoft-Windows-Sysmon/Operational</location>
     <log_format>eventchannel</log_format>
   </localfile>

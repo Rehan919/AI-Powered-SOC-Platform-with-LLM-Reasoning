@@ -477,11 +477,14 @@ Supported active-response commands:
 
 These PowerShell scripts configure a **Windows** Wazuh agent for enhanced detection and automated response.
 
-### Detection Setup (Tiers 2 & 3)
+### Detection Setup (Tiers 1, 2 & 3)
 
 The platform provides layered defense-in-depth detection tiers:
+- **Tier 1 (Windows Defender)** — Forwards native Windows Defender detections directly to the SOC platform.
 - **Tier 2 (Sysmon)** — Catches execution and behavior, including fileless malware, by logging process creation, network connections, and registry modifications.
 - **Tier 3 (VirusTotal)** — Performs hash lookups on file drops via real-time FIM (detect-on-download, no execution required).
+
+#### 1. Agent Setup (Tiers 1, 2, & 3 FIM)
 
 Run in an **elevated PowerShell**:
 
@@ -491,11 +494,35 @@ Run in an **elevated PowerShell**:
 
 This will:
 1. Back up the current Wazuh agent config (`ossec.conf.bak_*`)
-2. Download and install Sysmon with SwiftOnSecurity rules (**Tier 2**)
-3. Add Sysmon event channel forwarding to Wazuh
-4. Enable real-time File Integrity Monitoring on the `Downloads` folder for VirusTotal hash lookups (**Tier 3**)
-5. Validate the XML config (auto-restores backup on failure)
-6. Restart the Wazuh agent
+2. Add Windows Defender event channel forwarding (**Tier 1**)
+3. Download and install Sysmon with SwiftOnSecurity rules (**Tier 2**)
+4. Add Sysmon event channel forwarding to Wazuh
+5. Enable real-time File Integrity Monitoring on the `Downloads` folder for VirusTotal hash lookups (**Tier 3**)
+6. Validate the XML config (auto-restores backup on failure)
+7. Restart the Wazuh agent
+
+#### 2. Manager Setup (Tier 3 VirusTotal Integration)
+
+To enable Tier 3 detect-on-download capabilities, you need a free VirusTotal API key.
+Add the following to your manager's `/var/ossec/etc/ossec.conf` file:
+
+```xml
+<integration>
+  <name>virustotal</name>
+  <api_key>YOUR_VIRUSTOTAL_API_KEY</api_key>
+  <group>syscheck</group>
+  <alert_format>json</alert_format>
+</integration>
+```
+Restart the manager to apply the integration: `docker restart wazuh.manager`
+
+#### 3. Verification (EICAR Test)
+
+To verify the pipeline is fully operational:
+1. Download the harmless **EICAR test file** into your `Downloads` directory.
+2. The agent will immediately hash it (FIM).
+3. The manager queries VirusTotal and fires a high-severity alert.
+4. The alert hits SentinelForge via Webhook and appears in the dashboard without ever executing the file.
 
 ### Mitigation Setup (Active Response)
 
