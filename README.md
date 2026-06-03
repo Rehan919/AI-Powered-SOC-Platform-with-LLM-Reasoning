@@ -250,7 +250,7 @@ Open http://localhost:3000. The dashboard includes:
 
 ### Process Forensics
 
-Navigate to http://localhost:3000/forensics/{incident_id} for:
+Navigate to http://localhost:3000/incident/{id}/forensics for:
 
 - **Process tree** — All processes spawned with command lines, PIDs, parent processes, hashes
 - **Files created** — Dropped files with source process and timestamps
